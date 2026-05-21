@@ -17,8 +17,22 @@ from .validator import (
 
 load_dotenv()
 
-MIN_REVIEW_WORDS = 30
-MAX_REVIEW_WORDS = 100
+MIN_REVIEW_WORDS = 50
+MAX_REVIEW_WORDS = 150
+
+_openai_client = None
+
+
+def _get_openai_client():
+    global _openai_client
+    if _openai_client is None:
+        from openai import OpenAI
+
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            raise ConfigError("OPENAI_API_KEY not found in environment or .env file")
+        _openai_client = OpenAI(api_key=api_key, timeout=15.0)
+    return _openai_client
 
 
 def _word_count(text: str) -> int:
@@ -50,18 +64,17 @@ def _build_prompt(profile: FarmerProfile, product_name: str, context: Optional[s
         f"Input:\n- " + "\n- ".join(parts) + "\n\n"
         "Task: Generate a realistic farmer-style review of the product.\n\n"
         "Rules:\n"
-        "- Review must be medium length (40-80 words, no shorter, no longer)\n"
+        "- Review must be 5-6 sentences (no shorter, no longer)\n"
         "- Sound natural and conversational, like a real Nigerian farmer\n"
-        "- Always assume the farmer is located somewhere in Nigeria (North, South, East, West, or Middle Belt)\n"
-        "- Use any Nigerian state or region (e.g., Kano, Kaduna, Lagos, Oyo, Benue, Enugu, Rivers, Ogun, Kebbi, etc.)\n"
-        "- Reflect local farming conditions (weather, cost, soil, availability, transport issues)\n"
+        "- The output 'location' MUST be the same as the farmer's actual location from the input profile (e.g., if the farmer is in Kaduna, the location field must be 'Kaduna')\n"
+        "- Reflect local farming conditions in that specific location (weather, cost, soil, availability, transport issues)\n"
         "- Include at least one benefit and one limitation or concern in the review\n"
         "- Do not be overly formal or robotic\n"
         "- Avoid repeating phrases across responses\n\n"
         "Output ONLY valid JSON with these exact keys (no markdown, no backticks):\n"
         '{\n'
-        '  "location": "Nigerian state or region used",\n'
-        '  "review": "string (40-80 words)",\n'
+        '  "location": "farmer\'s location from input profile",\n'
+        '  "review": "string (5-6 sentences)",\n'
         '  "rating": number (1-5),\n'
         '  "confidence": "Low | Medium | High",\n'
         '  "reasoning": "short explanation of rating"\n'
@@ -110,10 +123,8 @@ def _parse_json_response(text: str) -> dict:
     return data
 
 
-def _call_openai(prompt: str, api_key: str) -> str:
-    from openai import OpenAI
-
-    client = OpenAI(api_key=api_key)
+def _call_openai(prompt: str) -> str:
+    client = _get_openai_client()
     response = client.chat.completions.create(
         model="gpt-4o-mini",
         messages=[
@@ -167,14 +178,10 @@ def generate_review(
         result.review = _ensure_review_length(result.review)
         return result
 
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        raise ConfigError("OPENAI_API_KEY not found in environment or .env file")
-
     prompt = _build_prompt(profile, product_name, context)
 
     try:
-        raw_response = _call_openai(prompt, api_key)
+        raw_response = _call_openai(prompt)
         raw_response = _normalize_text(raw_response)
         parsed = _parse_json_response(raw_response)
         result = ReviewResult.from_dict(parsed)

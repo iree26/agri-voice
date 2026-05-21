@@ -1,3 +1,4 @@
+import asyncio
 from fastapi import FastAPI, HTTPException, Query
 from pydantic import BaseModel
 from typing import Optional
@@ -26,7 +27,8 @@ class GenerateReviewResponse(BaseModel):
 @app.post("/generate-review", response_model=GenerateReviewResponse)
 async def generate_review_endpoint(request: GenerateReviewRequest):
     try:
-        result = generate_review(
+        result = await asyncio.to_thread(
+            generate_review,
             farmer_profile=request.farmer_profile,
             product_name=request.product_name,
             optional_context=request.optional_context,
