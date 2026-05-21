@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import {
-  Star, Clock, Copy, Check, X, Quote, Globe,
-  ScrollText, ChevronRight, Trash2
+  Star, Clock, Copy, Check, Quote, ScrollText,
+  ChevronRight, Trash2
 } from 'lucide-react'
 
 export default function RecentReviewsLog({ history, onClear }) {
@@ -20,7 +20,6 @@ export default function RecentReviewsLog({ history, onClear }) {
       transition={{ duration: 0.5 }}
       className="px-6 md:px-10 py-10 max-w-6xl mx-auto w-full"
     >
-      {/* Header */}
       <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
         <div className="flex items-center gap-2">
           <ScrollText className="w-5 h-5 text-harvest" />
@@ -46,7 +45,6 @@ export default function RecentReviewsLog({ history, onClear }) {
         Your last few generations. Click any review to expand.
       </p>
 
-      {/* Reviews stack */}
       <div className="space-y-3">
         <AnimatePresence>
           {history.map((entry, i) => (
@@ -64,7 +62,6 @@ export default function RecentReviewsLog({ history, onClear }) {
   )
 }
 
-// ── EMPTY STATE ─────────────────────────────────────────
 function EmptyState() {
   return (
     <motion.section
@@ -85,7 +82,6 @@ function EmptyState() {
   )
 }
 
-// ── LOG ITEM ────────────────────────────────────────────
 function ReviewLogItem({ entry, index, isExpanded, onToggle }) {
   const [copied, setCopied] = useState(false)
   const { review, persona, product, timestamp } = entry
@@ -110,7 +106,6 @@ function ReviewLogItem({ entry, index, isExpanded, onToggle }) {
       }`}
       onClick={onToggle}
     >
-      {/* Collapsed row */}
       <div className="p-4 flex items-center gap-4">
         <div className="w-10 h-10 rounded-full bg-paper border border-border flex items-center justify-center text-xl shrink-0">
           {personaEmoji(persona.crop)}
@@ -118,10 +113,10 @@ function ReviewLogItem({ entry, index, isExpanded, onToggle }) {
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-display font-bold text-earth text-sm">
+            <span className="font-display font-bold text-earth text-sm truncate">
               {persona.name}
             </span>
-            <span className="text-xs text-earth/60">
+            <span className="text-xs text-earth/60 truncate">
               · {cap(persona.crop)} · {persona.state}
             </span>
           </div>
@@ -157,7 +152,6 @@ function ReviewLogItem({ entry, index, isExpanded, onToggle }) {
         </motion.div>
       </div>
 
-      {/* Expanded content */}
       <AnimatePresence>
         {isExpanded && (
           <motion.div
@@ -168,14 +162,12 @@ function ReviewLogItem({ entry, index, isExpanded, onToggle }) {
             className="overflow-hidden"
           >
             <div className="px-4 pb-4 pt-2 border-t border-border bg-paper/50">
-              {/* Product details */}
-              <div className="text-[10px] font-mono uppercase tracking-wider text-earth/60 mb-3 mt-2">
+              <div className="text-[10px] font-mono uppercase tracking-wider text-earth/60 mb-3 mt-2 break-words">
                 REVIEWING · {product.name}
                 {product.brand ? ` · ${product.brand}` : ''}
                 {product.price ? ` · ₦${Number(product.price).toLocaleString()}` : ''}
               </div>
 
-              {/* Review text */}
               <div className="relative mb-4">
                 <Quote className="absolute -top-1 -left-1 w-4 h-4 text-harvest/30" />
                 <p className="pl-5 font-serif italic text-sm text-earth leading-relaxed">
@@ -183,7 +175,6 @@ function ReviewLogItem({ entry, index, isExpanded, onToggle }) {
                 </p>
               </div>
 
-              {/* Reasoning */}
               {review.reasoning && (
                 <div className="p-3 rounded-lg bg-forest/5 border border-forest/15 mb-3">
                   <div className="text-[10px] font-mono uppercase tracking-wider text-forest font-bold mb-1">
@@ -195,7 +186,6 @@ function ReviewLogItem({ entry, index, isExpanded, onToggle }) {
                 </div>
               )}
 
-              {/* Copy button */}
               <button
                 onClick={handleCopy}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border-2 border-border rounded-full text-xs font-semibold text-earth hover:border-harvest transition-colors"
@@ -220,7 +210,6 @@ function ReviewLogItem({ entry, index, isExpanded, onToggle }) {
   )
 }
 
-// ── HELPERS ─────────────────────────────────────────────
 function personaEmoji(crop) {
   const map = {
     rice: '🌾', maize: '🌽', cassava: '🥔', yam: '🍠', tomato: '🍅',
@@ -243,4 +232,4 @@ function timeAgo(timestamp) {
   const hours = Math.floor(minutes / 60)
   if (hours < 24) return `${hours}h ago`
   return `${Math.floor(hours / 24)}d ago`
-}
+} 

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import {
   Star, Quote, Copy, Check, RotateCcw, Globe, Sparkles,
-  ChevronDown, ChevronUp, Brain, Volume2
+  ChevronDown, ChevronUp, Brain
 } from 'lucide-react'
 
 export default function ReviewOutputCard({
@@ -31,7 +31,6 @@ export default function ReviewOutputCard({
       transition={{ duration: 0.6 }}
       className="px-6 md:px-10 py-10 max-w-4xl mx-auto w-full"
     >
-      {/* Section header */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
@@ -49,17 +48,14 @@ export default function ReviewOutputCard({
         </h2>
       </motion.div>
 
-      {/* The review card itself */}
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5, delay: 0.1 }}
         className="relative pinned-card bg-cream border-2 border-border rounded-2xl card-elevated overflow-hidden"
       >
-        {/* Top accent stripe */}
         <div className="h-2 bg-gradient-to-r from-harvest via-harvest-light to-harvest" />
 
-        {/* "Just generated" stamp */}
         <motion.div
           initial={{ opacity: 0, scale: 0, rotate: -20 }}
           animate={{ opacity: 1, scale: 1, rotate: -2 }}
@@ -70,30 +66,28 @@ export default function ReviewOutputCard({
         </motion.div>
 
         <div className="p-6 md:p-8">
-          {/* Persona row */}
           <motion.div
             initial={{ opacity: 0, x: -10 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.3 }}
-            className="flex items-center gap-3 mb-5"
+            className="flex items-center gap-3 mb-5 pr-24 sm:pr-28"
           >
             <div className="w-12 h-12 rounded-full bg-harvest/20 flex items-center justify-center text-2xl shrink-0">
               {personaEmoji(persona.crop)}
             </div>
             <div className="flex-1 min-w-0">
-              <div className="font-display font-bold text-earth text-lg">
+              <div className="font-display font-bold text-earth text-base sm:text-lg">
                 {persona.name}{persona.age ? `, ${persona.age}` : ''}
               </div>
-              <div className="text-xs text-earth/65">
+              <div className="text-xs text-earth/65 leading-relaxed">
                 {cap(persona.crop)} farmer · {persona.state}
                 {persona.lga ? `, ${persona.lga}` : ''}
                 {persona.farmSize ? ` · ${persona.farmSize} hectares` : ''}
-                {persona.yearsOfExperience ? ` · ${persona.yearsOfExperience} years farming` : ''}
+                {persona.yearsOfExperience ? ` · ${persona.yearsOfExperience} yrs` : ''}
               </div>
             </div>
           </motion.div>
 
-          {/* Star rating */}
           <div className="flex items-center gap-1 mb-2">
             {[1, 2, 3, 4, 5].map((i) => (
               <motion.div
@@ -108,7 +102,7 @@ export default function ReviewOutputCard({
                 }}
               >
                 <Star
-                  className={`w-8 h-8 ${i <= review.rating ? 'text-harvest' : 'text-earth/15'}`}
+                  className={`w-7 h-7 sm:w-8 sm:h-8 ${i <= review.rating ? 'text-harvest' : 'text-earth/15'}`}
                   fill={i <= review.rating ? 'currentColor' : 'none'}
                   strokeWidth={1.8}
                 />
@@ -124,7 +118,6 @@ export default function ReviewOutputCard({
             </motion.span>
           </div>
 
-          {/* Product line */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -136,7 +129,6 @@ export default function ReviewOutputCard({
             {product.price ? ` · ₦${Number(product.price).toLocaleString()}` : ''}
           </motion.div>
 
-          {/* The actual review with quote marks */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -149,7 +141,6 @@ export default function ReviewOutputCard({
             </div>
           </motion.div>
 
-          {/* Tags row */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -161,7 +152,6 @@ export default function ReviewOutputCard({
             <CategoryBadge category={product.category} />
           </motion.div>
 
-          {/* Reasoning toggle */}
           {review.reasoning && (
             <motion.div
               initial={{ opacity: 0 }}
@@ -201,7 +191,6 @@ export default function ReviewOutputCard({
             </motion.div>
           )}
 
-          {/* Action buttons */}
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -256,7 +245,6 @@ export default function ReviewOutputCard({
   )
 }
 
-// ── TYPED REVIEW (letter by letter animation) ──────────
 function TypedReview({ text }) {
   const [displayed, setDisplayed] = useState('')
   const [isDone, setIsDone] = useState(false)
@@ -284,7 +272,6 @@ function TypedReview({ text }) {
   )
 }
 
-// ── BADGES ──────────────────────────────────────────────
 function LanguageBadge({ language }) {
   return (
     <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-harvest/10 border border-harvest/30">
@@ -325,7 +312,6 @@ function CategoryBadge({ category }) {
   )
 }
 
-// ── HELPERS ─────────────────────────────────────────────
 function personaEmoji(crop) {
   const map = {
     rice: '🌾', maize: '🌽', cassava: '🥔', yam: '🍠', tomato: '🍅',
@@ -337,4 +323,4 @@ function personaEmoji(crop) {
 function cap(s) {
   if (!s) return ''
   return s.charAt(0).toUpperCase() + s.slice(1)
-}
+} 

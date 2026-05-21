@@ -5,7 +5,6 @@ import {
   Beaker, Layers, Tag, Banknote, ArrowRight, Sparkles, Check, X
 } from 'lucide-react'
 
-// ── SAMPLE PERSONAS ──────────────────────────────────────
 const SAMPLE_PERSONAS = [
   {
     id: 'amina',
@@ -131,27 +130,14 @@ const PRODUCT_CATEGORIES = [
   { id: 'pesticide', label: 'Pesticide', emoji: '🧴' },
 ]
 
-// ── MAIN COMPONENT ───────────────────────────────────────
 export default function PersonaProductForms({ onGenerate, isGenerating }) {
   const [persona, setPersona] = useState({
-    name: '',
-    age: '',
-    state: '',
-    lga: '',
-    crop: '',
-    farmSize: '',
-    soilType: '',
-    fertilizerType: '',
-    fertilizerFrequency: '',
-    language: '',
-    yearsOfExperience: '',
+    name: '', age: '', state: '', lga: '', crop: '', farmSize: '',
+    soilType: '', fertilizerType: '', fertilizerFrequency: '',
+    language: '', yearsOfExperience: '',
   })
   const [product, setProduct] = useState({
-    category: '',
-    name: '',
-    price: '',
-    brand: '',
-    season: '',
+    category: '', name: '', price: '', brand: '', season: '',
   })
   const [activeSample, setActiveSample] = useState(null)
 
@@ -190,7 +176,6 @@ export default function PersonaProductForms({ onGenerate, isGenerating }) {
 
   return (
     <section className="px-6 md:px-10 py-6 max-w-6xl mx-auto w-full">
-      {/* Sample personas row */}
       <SampleRow
         samples={SAMPLE_PERSONAS}
         activeSample={activeSample}
@@ -198,13 +183,11 @@ export default function PersonaProductForms({ onGenerate, isGenerating }) {
         onClear={clearAll}
       />
 
-      {/* Two column form */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
         <PersonaForm persona={persona} update={updatePersona} />
         <ProductForm product={product} update={updateProduct} />
       </div>
 
-      {/* Generate button */}
       <GenerateButton
         canGenerate={canGenerate}
         isGenerating={isGenerating}
@@ -216,7 +199,6 @@ export default function PersonaProductForms({ onGenerate, isGenerating }) {
   )
 }
 
-// ── SAMPLE ROW ───────────────────────────────────────────
 function SampleRow({ samples, activeSample, onLoad, onClear }) {
   return (
     <motion.div
@@ -240,7 +222,7 @@ function SampleRow({ samples, activeSample, onLoad, onClear }) {
             whileHover={{ y: -2, scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             onClick={() => onLoad(s)}
-            className={`flex items-center gap-2.5 px-4 py-2.5 rounded-full border-2 transition-all ${
+            className={`flex items-center gap-2 px-3 py-2 sm:px-4 sm:py-2.5 rounded-full border-2 transition-all ${
               activeSample === s.id
                 ? 'bg-harvest text-white border-harvest shadow-md'
                 : 'bg-cream border-border hover:border-harvest/50 text-earth'
@@ -274,7 +256,6 @@ function SampleRow({ samples, activeSample, onLoad, onClear }) {
   )
 }
 
-// ── PERSONA FORM ─────────────────────────────────────────
 function PersonaForm({ persona, update }) {
   return (
     <motion.div
@@ -302,9 +283,8 @@ function PersonaForm({ persona, update }) {
       </div>
 
       <div className="space-y-4">
-        {/* Name + Age row */}
-        <div className="grid grid-cols-3 gap-3">
-          <div className="col-span-2">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="sm:col-span-2">
             <Label icon={User}>Name</Label>
             <Input
               value={persona.name}
@@ -323,8 +303,7 @@ function PersonaForm({ persona, update }) {
           </div>
         </div>
 
-        {/* State + LGA */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <Label icon={MapPin}>State</Label>
             <Select value={persona.state} onChange={(e) => update('state', e.target.value)}>
@@ -342,8 +321,7 @@ function PersonaForm({ persona, update }) {
           </div>
         </div>
 
-        {/* Crop + Farm size */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <Label icon={Sprout}>Main crop</Label>
             <Select value={persona.crop} onChange={(e) => update('crop', e.target.value)}>
@@ -363,8 +341,7 @@ function PersonaForm({ persona, update }) {
           </div>
         </div>
 
-        {/* Soil + Years */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <Label icon={Layers}>Soil type</Label>
             <Select value={persona.soilType} onChange={(e) => update('soilType', e.target.value)}>
@@ -383,8 +360,7 @@ function PersonaForm({ persona, update }) {
           </div>
         </div>
 
-        {/* Fertilizer type + frequency */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <Label icon={Beaker}>Fertilizer type</Label>
             <Select value={persona.fertilizerType} onChange={(e) => update('fertilizerType', e.target.value)}>
@@ -401,15 +377,14 @@ function PersonaForm({ persona, update }) {
           </div>
         </div>
 
-        {/* Language */}
         <div>
           <Label icon={Globe}>Primary language</Label>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             {LANGUAGES.map((l) => (
               <button
                 key={l.id}
                 onClick={() => update('language', l.id)}
-                className={`py-2.5 rounded-lg border-2 text-sm font-semibold transition-all ${
+                className={`py-2.5 rounded-lg border-2 text-xs sm:text-sm font-semibold transition-all ${
                   persona.language === l.id
                     ? 'bg-harvest text-white border-harvest'
                     : 'bg-white border-border hover:border-harvest/40 text-earth'
@@ -425,7 +400,6 @@ function PersonaForm({ persona, update }) {
   )
 }
 
-// ── PRODUCT FORM ─────────────────────────────────────────
 function ProductForm({ product, update }) {
   return (
     <motion.div
@@ -453,10 +427,9 @@ function ProductForm({ product, update }) {
       </div>
 
       <div className="space-y-4">
-        {/* Category */}
         <div>
           <Label icon={Tag}>Category</Label>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
             {PRODUCT_CATEGORIES.map((c) => (
               <button
                 key={c.id}
@@ -478,7 +451,6 @@ function ProductForm({ product, update }) {
           </div>
         </div>
 
-        {/* Product name */}
         <div>
           <Label icon={Package}>Product name</Label>
           <Input
@@ -488,8 +460,7 @@ function ProductForm({ product, update }) {
           />
         </div>
 
-        {/* Brand + price */}
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <div>
             <Label icon={Tag}>Brand</Label>
             <Input
@@ -509,7 +480,6 @@ function ProductForm({ product, update }) {
           </div>
         </div>
 
-        {/* Season */}
         <div>
           <Label icon={Calendar}>Season of use</Label>
           <Select value={product.season} onChange={(e) => update('season', e.target.value)}>
@@ -521,7 +491,6 @@ function ProductForm({ product, update }) {
           </Select>
         </div>
 
-        {/* Empty space filler note */}
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -538,21 +507,19 @@ function ProductForm({ product, update }) {
   )
 }
 
-// ── GENERATE BUTTON ──────────────────────────────────────
 function GenerateButton({ canGenerate, isGenerating, onSubmit, personaValid, productValid }) {
-    return (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          className="mt-10 flex flex-col items-center"
-        >
-          {/* Validation status */}
-          <div className="flex items-center gap-4 mb-5 text-xs text-earth/70">
-            <ValidStatus label="Persona" valid={personaValid} />
-            <span className="text-earth/30">·</span>
-            <ValidStatus label="Product" valid={productValid} />
-          </div>
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.4 }}
+      className="mt-10 flex flex-col items-center"
+    >
+      <div className="flex items-center gap-4 mb-5 text-xs text-earth/70">
+        <ValidStatus label="Persona" valid={personaValid} />
+        <span className="text-earth/30">·</span>
+        <ValidStatus label="Product" valid={productValid} />
+      </div>
 
       <motion.button
         whileHover={canGenerate ? { scale: 1.03 } : {}}
@@ -585,7 +552,7 @@ function GenerateButton({ canGenerate, isGenerating, onSubmit, personaValid, pro
       </motion.button>
 
       {!canGenerate && !isGenerating && (
-        <p className="text-xs text-earth/60 font-serif italic mt-3">
+        <p className="text-xs text-earth/60 font-serif italic mt-3 text-center px-4">
           Fill in name, crop, state and language. Pick a category and product name.
         </p>
       )}
@@ -604,7 +571,6 @@ function ValidStatus({ label, valid }) {
   )
 }
 
-// ── REUSABLE INPUTS ──────────────────────────────────────
 function Label({ icon: Icon, children }) {
   return (
     <label className="block text-xs font-semibold text-earth/80 mb-1.5 uppercase tracking-wide">
@@ -637,4 +603,4 @@ function Select({ children, ...props }) {
 function cap(s) {
   if (!s) return ''
   return s.charAt(0).toUpperCase() + s.slice(1)
-}
+} 
