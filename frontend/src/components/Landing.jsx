@@ -298,4 +298,4 @@ function TypingText({ text }) {
       ))}
     </motion.span>
   )
-}
+} 
