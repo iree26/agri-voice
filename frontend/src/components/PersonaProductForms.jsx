@@ -540,19 +540,19 @@ function ProductForm({ product, update }) {
 
 // ── GENERATE BUTTON ──────────────────────────────────────
 function GenerateButton({ canGenerate, isGenerating, onSubmit, personaValid, productValid }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.4 }}
-      className="mt-8 text-center"
-    >
-      {/* Validation status */}
-      <div className="inline-flex items-center gap-4 mb-4 text-xs text-earth/70">
-        <ValidStatus label="Persona" valid={personaValid} />
-        <span className="text-earth/30">·</span>
-        <ValidStatus label="Product" valid={productValid} />
-      </div>
+    return (
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5, delay: 0.4 }}
+          className="mt-10 flex flex-col items-center"
+        >
+          {/* Validation status */}
+          <div className="flex items-center gap-4 mb-5 text-xs text-earth/70">
+            <ValidStatus label="Persona" valid={personaValid} />
+            <span className="text-earth/30">·</span>
+            <ValidStatus label="Product" valid={productValid} />
+          </div>
 
       <motion.button
         whileHover={canGenerate ? { scale: 1.03 } : {}}

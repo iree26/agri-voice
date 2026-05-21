@@ -5,20 +5,24 @@ import { ArrowLeft, BookOpen, Sparkles, Star, AlertCircle } from 'lucide-react'
 import Background from './Background'
 import PersonaProductForms from './PersonaProductForms'
 import ReviewOutputCard from './ReviewOutputCard'
+import ComparisonMode from './ComparisonMode'
+import RecentReviewsLog from './RecentReviewsLog'
 import { generateReview } from '../lib/api'
+
+const MAX_HISTORY = 5
 
 export default function ReviewsPage() {
   const [isGenerating, setIsGenerating] = useState(false)
   const [latestReview, setLatestReview] = useState(null)
   const [lastInputs, setLastInputs] = useState(null)
   const [error, setError] = useState(null)
+  const [history, setHistory] = useState([])
 
   const handleGenerate = async ({ persona, product }) => {
     setIsGenerating(true)
     setError(null)
     setLastInputs({ persona, product })
 
-    // Scroll into view as we generate
     setTimeout(() => {
       window.scrollTo({ top: window.scrollY + 400, behavior: 'smooth' })
     }, 200)
@@ -26,6 +30,7 @@ export default function ReviewsPage() {
     try {
       const result = await generateReview({ persona, product })
       setLatestReview(result)
+      addToHistory({ persona, product, review: result })
     } catch (err) {
       console.error('Review generation failed:', err)
       setError(err.message || 'Could not generate the review. Please try again.')
@@ -40,12 +45,26 @@ export default function ReviewsPage() {
     try {
       const result = await generateReview(lastInputs)
       setLatestReview(result)
+      addToHistory({ ...lastInputs, review: result })
     } catch (err) {
       setError(err.message || 'Could not regenerate.')
     } finally {
       setIsGenerating(false)
     }
   }
+
+  const addToHistory = ({ persona, product, review }) => {
+    const entry = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      timestamp: Date.now(),
+      persona,
+      product,
+      review,
+    }
+    setHistory((prev) => [entry, ...prev].slice(0, MAX_HISTORY))
+  }
+
+  const clearHistory = () => setHistory([])
 
   return (
     <div className="page-bg">
@@ -133,7 +152,7 @@ export default function ReviewsPage() {
         {/* Output card */}
         {latestReview && lastInputs && !error && (
           <ReviewOutputCard
-            key={`${lastInputs.persona.name}-${Date.now()}`}
+            key={`${lastInputs.persona.name}-${history[0]?.id}`}
             review={latestReview}
             persona={lastInputs.persona}
             product={lastInputs.product}
@@ -142,44 +161,22 @@ export default function ReviewsPage() {
           />
         )}
 
-        {/* Remaining placeholders */}
-        {!latestReview && !error && (
-          <>
-            <PlaceholderSection title="Comparison Mode" subtitle="Same product reviewed by two different personas, side by side." />
-            <PlaceholderSection title="Recent Reviews Log" subtitle="Last 5 generated reviews, scrollable, with copy and re-open buttons." />
-          </>
-        )}
+        {/* Comparison mode */}
+        <ComparisonMode />
 
-        {latestReview && (
-          <>
-            <PlaceholderSection title="Comparison Mode" subtitle="Same product reviewed by two different personas, side by side." />
-            <PlaceholderSection title="Recent Reviews Log" subtitle="Last 5 generated reviews, scrollable, with copy and re-open buttons." />
-          </>
-        )}
+        {/* Recent reviews log */}
+        <RecentReviewsLog history={history} onClear={clearHistory} />
+
+        {/* Footer */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+          className="flex items-center justify-center gap-6 py-10 text-xs text-earth/70 mt-8"
+        >
+          <div>AgriVoice · Task A submission · DSN x BCT LLM Agent Challenge 3.0</div>
+        </motion.div>
       </div>
     </div>
   )
 }
-
-function PlaceholderSection({ title, subtitle }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
-      transition={{ duration: 0.5 }}
-      className="px-6 md:px-10 py-4 max-w-5xl mx-auto w-full"
-    >
-      <div className="bg-cream/70 border-2 border-dashed border-harvest/40 rounded-2xl p-7">
-        <div className="flex items-center gap-3 mb-2">
-          <Star className="w-4 h-4 text-harvest" />
-          <div className="text-xs font-mono uppercase tracking-wider text-harvest font-bold">
-            to build next
-          </div>
-        </div>
-        <div className="font-display font-bold text-earth text-lg mb-1">{title}</div>
-        <div className="text-sm text-earth/65 font-serif italic">{subtitle}</div>
-      </div>
-    </motion.div>
-  )
-} 
