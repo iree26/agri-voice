@@ -17,8 +17,8 @@ from .validator import (
 
 load_dotenv()
 
-MIN_REVIEW_WORDS = 50
-MAX_REVIEW_WORDS = 150
+MIN_REVIEW_WORDS = 15
+MAX_REVIEW_WORDS = 60
 
 _openai_client = None
 
@@ -64,7 +64,7 @@ def _build_prompt(profile: FarmerProfile, product_name: str, context: Optional[s
         f"Input:\n- " + "\n- ".join(parts) + "\n\n"
         "Task: Generate a realistic farmer-style review of the product.\n\n"
         "Rules:\n"
-        "- Review must be 5-6 sentences (no shorter, no longer)\n"
+        "- Review must be 2-3 sentences (no shorter, no longer)\n"
         "- Sound natural and conversational, like a real Nigerian farmer\n"
         "- The output 'location' MUST be the same as the farmer's actual location from the input profile (e.g., if the farmer is in Kaduna, the location field must be 'Kaduna')\n"
         "- Reflect local farming conditions in that specific location (weather, cost, soil, availability, transport issues)\n"
@@ -74,7 +74,7 @@ def _build_prompt(profile: FarmerProfile, product_name: str, context: Optional[s
         "Output ONLY valid JSON with these exact keys (no markdown, no backticks):\n"
         '{\n'
         '  "location": "farmer\'s location from input profile",\n'
-        '  "review": "string (5-6 sentences)",\n'
+        '  "review": "string (2-3 sentences)",\n'
         '  "rating": number (1-5),\n'
         '  "confidence": "Low | Medium | High",\n'
         '  "reasoning": "short explanation of rating"\n'

@@ -1,5 +1,6 @@
 import asyncio
 from fastapi import FastAPI, HTTPException, Query
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional
 
@@ -7,6 +8,14 @@ from agrivoice import generate_review, FarmerProfile, ReviewResult
 from agrivoice.exceptions import AgriVoiceError, ValidationError, ConfigError
 
 app = FastAPI(title="AgriVoice API", version="1.0.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 class GenerateReviewRequest(BaseModel):

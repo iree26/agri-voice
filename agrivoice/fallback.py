@@ -36,7 +36,7 @@ def generate_fallback_review(
         else:
             review = f"During {context_lower}, {first_char.lower()}{rest}"
 
-    review = review[:500].strip()
+    review = review[:300].strip()
     if review and not review[-1] in ".!?":
         review += "."
 
