@@ -168,14 +168,19 @@ export default function ReviewsPage() {
         <RecentReviewsLog history={history} onClear={clearHistory} />
 
         {/* Footer */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.5 }}
-          className="flex items-center justify-center gap-6 py-10 text-xs text-earth/70 mt-8"
-        >
-          <div>AgriVoice · Task A submission · DSN x BCT LLM Agent Challenge 3.0</div>
-        </motion.div>
+<motion.div
+  initial={{ opacity: 0 }}
+  animate={{ opacity: 1 }}
+  transition={{ delay: 0.5 }}
+  className="flex flex-col items-center justify-center gap-2 py-10 text-xs text-earth/60 mt-8"
+>
+  <div className="flex items-center gap-1.5">
+    <span>Built with</span>
+    <span className="text-harvest">★</span>
+    <span>for Nigerian voices</span>
+  </div>
+  <div className="font-mono text-[10px] text-earth/50">AgriVoice v0.1 BETA</div>
+</motion.div> 
       </div>
     </div>
   )
