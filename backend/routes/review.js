@@ -6,41 +6,34 @@ const { generateReview, MLServiceError } = require('../services/mlService')
 const { get, set, makeReviewKey } = require('../cache/cacheManager')
 const { generateRequestId } = require('../utils/requestId')
 const { log, logError } = require('../utils/logger')
+const { buildProfileString, buildProductString } = require('../prompts/reviewPrompt')
 
 router.post('/generate-review', standard, async (req, res) => {
   const requestId = generateRequestId()
-  const { persona, product, prefer_fallback = false } = req.body
 
-  if (!persona || !product) {
-    return res.status(400).json({
-      requestId,
-      status: 'error',
-      error: 'VALIDATION_FAILED',
-      message: 'Request must include persona and product objects.',
-    })
+  const { persona, product, farmer_profile, product_name, optional_context, prefer_fallback = false } = req.body
+
+  let profileStr, productStr
+
+  if (farmer_profile && product_name) {
+    profileStr = farmer_profile
+    productStr = product_name
+  } else if (persona && product) {
+    if (!persona.state || !persona.crop) {
+      return res.status(400).json({ requestId, status: 'error', error: 'VALIDATION_FAILED', message: 'persona must include state and crop.' })
+    }
+    if (!product.name) {
+      return res.status(400).json({ requestId, status: 'error', error: 'VALIDATION_FAILED', message: 'product must include name.' })
+    }
+    profileStr = buildProfileString(persona)
+    productStr = buildProductString(product)
+  } else {
+    return res.status(400).json({ requestId, status: 'error', error: 'VALIDATION_FAILED', message: 'Provide either {persona, product} objects or {farmer_profile, product_name} strings.' })
   }
 
-  if (!persona.state || !persona.crop) {
-    return res.status(400).json({
-      requestId,
-      status: 'error',
-      error: 'VALIDATION_FAILED',
-      message: 'persona must include at least state and crop.',
-    })
-  }
+  log('generateReview', requestId, `START profile="${profileStr.slice(0, 50)}..." product="${productStr}"`)
 
-  if (!product.name) {
-    return res.status(400).json({
-      requestId,
-      status: 'error',
-      error: 'VALIDATION_FAILED',
-      message: 'product must include name.',
-    })
-  }
-
-  log('generateReview', requestId, `START persona=${persona.state} crop=${persona.crop} product=${product.name}`)
-
-  const cacheKey = makeReviewKey(persona, product.name)
+  const cacheKey = makeReviewKey(profileStr, productStr)
   const cached = get(cacheKey)
   if (cached && !prefer_fallback) {
     log('generateReview', requestId, 'CACHE_HIT')
@@ -50,35 +43,15 @@ router.post('/generate-review', standard, async (req, res) => {
   let result = null
 
   try {
-    result = await generateReviewWithClaude(persona, product, requestId)
+    result = await generateReviewWithClaude(profileStr, productStr, requestId)
   } catch (err) {
-    logError('generateReview', requestId, `Claude failed: ${err.message} — trying ML service fallback`)
-
+    logError('generateReview', requestId, `Claude failed: ${err.message} — trying ML fallback`)
     try {
-      const { buildFarmerProfileString } = require('../prompts/reviewPrompt')
-      const mlResult = await generateReview(
-        {
-          farmer_profile: buildFarmerProfileString ? buildFarmerProfileString(persona) : JSON.stringify(persona),
-          product_name: [product.brand, product.name].filter(Boolean).join(' '),
-          optional_context: product.category ? `category: ${product.category}` : '',
-          prefer_fallback: false,
-        },
-        requestId
-      )
-      result = {
-        rating: mlResult.rating,
-        review: mlResult.review,
-        language: mlResult.language || 'english',
-        reasoning: mlResult.reasoning || '',
-      }
+      const mlResult = await generateReview({ farmer_profile: profileStr, product_name: productStr, optional_context: optional_context || '', prefer_fallback: false }, requestId)
+      result = { location: mlResult.location, review: mlResult.review, rating: mlResult.rating, confidence: mlResult.confidence, reasoning: mlResult.reasoning }
     } catch (mlErr) {
-      logError('generateReview', requestId, `ML fallback also failed: ${mlErr.message}`)
-      return res.status(503).json({
-        requestId,
-        status: 'error',
-        error: 'SERVICE_UNAVAILABLE',
-        message: 'Review generation is temporarily unavailable. Please try again.',
-      })
+      logError('generateReview', requestId, `ML fallback failed: ${mlErr.message}`)
+      return res.status(503).json({ requestId, status: 'error', error: 'SERVICE_UNAVAILABLE', message: 'Review generation is temporarily unavailable. Please try again.' })
     }
   }
 

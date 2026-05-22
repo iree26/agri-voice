@@ -6,11 +6,11 @@ const client = process.env.ANTHROPIC_API_KEY
   ? new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
   : null
 
-async function generateReviewWithClaude(persona, product, requestId) {
+async function generateReviewWithClaude(profileStr, productStr, requestId) {
   if (!client) throw new Error('ANTHROPIC_API_KEY not set')
 
-  const userMessage = buildUserMessage(persona, product)
-  log('claudeService', requestId, `Calling Claude persona=${persona.state} product=${product.name}`)
+  const userMessage = buildUserMessage(profileStr, productStr)
+  log('claudeService', requestId, `Calling Claude profile="${profileStr.slice(0, 50)}..."`)
 
   const response = await client.messages.create({
     model: 'claude-sonnet-4-6',
@@ -23,7 +23,21 @@ async function generateReviewWithClaude(persona, product, requestId) {
   const jsonStr = raw.replace(/^```(?:json)?\s*/i, '').replace(/\s*```$/i, '').trim()
   const result = JSON.parse(jsonStr)
 
-  log('claudeService', requestId, `Claude SUCCESS rating=${result.rating} lang=${result.language}`)
+  if (result.review) {
+    const words = result.review.split(' ')
+    if (words.length > 60) {
+      result.review = words.slice(0, 60).join(' ')
+      if (!/[.!?]$/.test(result.review)) result.review += '.'
+    }
+  }
+
+  if (result.confidence) {
+    const c = result.confidence.trim().toLowerCase()
+    result.confidence = c.charAt(0).toUpperCase() + c.slice(1)
+    if (!['Low', 'Medium', 'High'].includes(result.confidence)) result.confidence = 'Medium'
+  }
+
+  log('claudeService', requestId, `Claude SUCCESS rating=${result.rating} confidence=${result.confidence}`)
   return result
 }
 
