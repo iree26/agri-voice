@@ -3,11 +3,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
 // Debug log so we can verify the env loaded correctly
 console.log('[AgriVoice] API_URL configured as:', API_URL)
 
-/**
- * Main entrypoint. Called by the UI when the user clicks Generate.
- * Translates our rich frontend objects into the flat string format
- * Temi's backend expects, then normalizes the response shape.
- */
+
 export async function generateReview({ persona, product }) {
   // Use mock only if no backend configured
   if (!API_URL || API_URL === '') {
@@ -30,7 +26,7 @@ const timeoutId = setTimeout(() => controller.abort(), 90000) // 90 second timeo
 
 let res
 try {
-  res = await fetch(`${API_URL}/generate-review`, {
+    res = await fetch(`${API_URL}/api/generate-review`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
