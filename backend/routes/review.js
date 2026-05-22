@@ -1,7 +1,7 @@
 const express = require('express')
 const router = express.Router()
 const { standard } = require('../middleware/rateLimiter')
-const { validateReviewRequest } = require('../middleware/validator')
+const { generateReviewWithClaude } = require('../services/claudeService')
 const { generateReview, MLServiceError } = require('../services/mlService')
 const { get, set, makeReviewKey } = require('../cache/cacheManager')
 const { generateRequestId } = require('../utils/requestId')
@@ -9,62 +9,82 @@ const { log, logError } = require('../utils/logger')
 
 router.post('/generate-review', standard, async (req, res) => {
   const requestId = generateRequestId()
-  const { farmer_profile, product_name, optional_context, prefer_fallback } = req.body
+  const { persona, product, prefer_fallback = false } = req.body
 
-  log('generateReview', requestId, `START farmer="${farmer_profile?.slice(0, 40)}..." product="${product_name}"`)
-
-  const validation = validateReviewRequest(req.body)
-  if (!validation.valid) {
+  if (!persona || !product) {
     return res.status(400).json({
       requestId,
       status: 'error',
-      error: validation.error,
-      field: validation.field,
-      message: validation.message,
+      error: 'VALIDATION_FAILED',
+      message: 'Request must include persona and product objects.',
     })
   }
 
-  const cacheKey = makeReviewKey(farmer_profile, product_name)
+  if (!persona.state || !persona.crop) {
+    return res.status(400).json({
+      requestId,
+      status: 'error',
+      error: 'VALIDATION_FAILED',
+      message: 'persona must include at least state and crop.',
+    })
+  }
+
+  if (!product.name) {
+    return res.status(400).json({
+      requestId,
+      status: 'error',
+      error: 'VALIDATION_FAILED',
+      message: 'product must include name.',
+    })
+  }
+
+  log('generateReview', requestId, `START persona=${persona.state} crop=${persona.crop} product=${product.name}`)
+
+  const cacheKey = makeReviewKey(persona, product.name)
   const cached = get(cacheKey)
   if (cached && !prefer_fallback) {
     log('generateReview', requestId, 'CACHE_HIT')
     return res.json({ requestId, status: 'success', cached: true, ...cached })
   }
 
+  let result = null
+
   try {
-    const result = await generateReview(
-      { farmer_profile, product_name, optional_context, prefer_fallback: prefer_fallback || false },
-      requestId
-    )
-
-    const payload = {
-      rating: result.rating,
-      review: result.review,
-      confidence: result.confidence?.toLowerCase() || 'high',
-      reasoning: result.reasoning,
-      location: result.location,
-    }
-
-    set(cacheKey, payload, 'review')
-    log('generateReview', requestId, `SUCCESS rating=${payload.rating} confidence=${payload.confidence}`)
-    return res.json({ requestId, status: 'success', cached: false, ...payload })
+    result = await generateReviewWithClaude(persona, product, requestId)
   } catch (err) {
-    logError('generateReview', requestId, err.message)
-    if (err instanceof MLServiceError) {
+    logError('generateReview', requestId, `Claude failed: ${err.message} — trying ML service fallback`)
+
+    try {
+      const { buildFarmerProfileString } = require('../prompts/reviewPrompt')
+      const mlResult = await generateReview(
+        {
+          farmer_profile: buildFarmerProfileString ? buildFarmerProfileString(persona) : JSON.stringify(persona),
+          product_name: [product.brand, product.name].filter(Boolean).join(' '),
+          optional_context: product.category ? `category: ${product.category}` : '',
+          prefer_fallback: false,
+        },
+        requestId
+      )
+      result = {
+        rating: mlResult.rating,
+        review: mlResult.review,
+        language: mlResult.language || 'english',
+        reasoning: mlResult.reasoning || '',
+      }
+    } catch (mlErr) {
+      logError('generateReview', requestId, `ML fallback also failed: ${mlErr.message}`)
       return res.status(503).json({
         requestId,
         status: 'error',
-        error: err.code,
-        message: 'The AI service is temporarily unavailable. Please try again.',
+        error: 'SERVICE_UNAVAILABLE',
+        message: 'Review generation is temporarily unavailable. Please try again.',
       })
     }
-    return res.status(500).json({
-      requestId,
-      status: 'error',
-      error: 'INTERNAL_ERROR',
-      message: err.message,
-    })
   }
+
+  set(cacheKey, result, 'review')
+  log('generateReview', requestId, `SUCCESS rating=${result.rating}`)
+  return res.json({ requestId, status: 'success', cached: false, ...result })
 })
 
 module.exports = router
