@@ -1,145 +1,211 @@
 # AgriVoice
 
-**AgriVoice** simulates authentic Nigerian farmer product reviews using rich persona modeling and AI. Build a farmer profile, pick an agricultural product, and generate a review that sounds like it came from that specific person — in their language, in their context.
+> Reviews in the voice of the farmer who would write them.
 
-Supports Hausa, Yoruba, Igbo, and Nigerian Pidgin/English, with natural code-switching between languages.
+AgriVoice is a user-modeling tool that simulates authentic Nigerian farmer product reviews. Build a rich persona, pick an agricultural product, and the system generates a review in that farmer's voice — code-switching naturally between Hausa, Yoruba, Igbo, Nigerian Pidgin, and English.
 
----
-
-## How it works
-
-1. **Build a farmer persona** — name, age, state, crop, farm size, soil type, fertilizer habits, language
-2. **Describe a product** — fertilizer, seed, tool, service, loan, or pesticide, with optional price and brand
-3. **Generate a review** — the AI returns a star rating, written review, confidence level, and reasoning
+Built for researchers, agritech product teams, and developers who need synthetic but plausible farmer feedback for testing, training data, or demo content.
 
 ---
 
-## Repository branches
+## Live demo
 
-### `frontend`
-React single-page app built with Vite, Tailwind CSS, and Framer Motion.
-
-**Key features:**
-- Landing page with animated sample review card and stats
-- Farmer persona builder with 5 pre-loaded sample personas (Amina, Chinedu, Bola, Grace, Mallam Sani)
-- Product form covering 6 categories across all 36 Nigerian states + FCT
-- Animated review output card with star pop animation and typed text effect
-- Comparison mode and recent reviews log (up to 5 entries)
-- Fully mobile responsive
-
-**Stack:** React 19, React Router 7, Vite, Tailwind CSS 3, Framer Motion, Lucide React
-
-**Deploy target:** Netlify (`netlify.toml` included)
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-Set `VITE_API_URL` in `.env` to point at the backend (defaults to `http://localhost:8000`):
-```
-VITE_API_URL=https://your-backend-url
-```
-
----
-
-### `backend`
-Express.js proxy and caching layer that sits between the frontend and the AI/ML service.
-
-**Key features:**
-- `POST /api/generate-review` — accepts either structured `{persona, product}` objects or flat profile strings
-- `POST /api/recommend` — product recommendation endpoint
-- In-memory response cache with cache key derived from farmer profile + product
-- Rate limiting middleware
-- Claude AI integration via `@anthropic-ai/sdk` as primary generator, ML service as fallback
-- Health check endpoint at `GET /health`
-
-**Stack:** Node.js 18+, Express 4, `@anthropic-ai/sdk`, `express-rate-limit`, `cors`
-
-```bash
-cd backend
-npm install
-npm run dev       # nodemon, watches for changes
-npm start         # production
-```
-
-Required environment variables (see `backend/.env.example`):
-```
-ANTHROPIC_API_KEY=your_key
-ML_SERVICE_URL=https://your-ml-service-url
-FRONTEND_URL=https://your-frontend-url
-PORT=3000
-```
-
----
-
-### `ai-agent`
-Python FastAPI ML service — the core review generator. This is called by the backend as a fallback or primary source depending on configuration.
-
-**Key features:**
-- `POST /generate-review` — accepts `farmer_profile` string, `product_name`, optional context, and `prefer_fallback` flag
-- OpenAI-powered generation with a 15–60 word review length cap
-- Rule-based template fallback (`agrivoice/fallback.py`) for when the AI is unavailable
-- Input validation with Pydantic models
-- Language-aware prompt templates for Hausa, Yoruba, Igbo, and English
-- CORS enabled for all origins
-
-**Stack:** Python, FastAPI, Uvicorn, OpenAI SDK, Pydantic, python-dotenv
-
-```bash
-pip install -r requirements.txt
-uvicorn main:app --reload
-```
-
-Required environment variable:
-```
-OPENAI_API_KEY=your_key
-```
-
-**Deploy target:** Render / Railway (includes `Procfile`)
+| Layer | URL |
+|---|---|
+| Frontend | Netlify (`netlify.toml` included) |
+| Backend  | `https://agri-voice-production.up.railway.app` |
 
 ---
 
 ## Architecture
 
+AgriVoice is split across three branches, each deployable independently. The system uses a **two-tier AI strategy**: Claude as the primary generator, with an OpenAI-backed Python service as the fallback.
+
 ```
-[Browser]
-    │
-    ▼
-[frontend]  ──────────────────────────────────►  Netlify CDN
-    │
-    │  POST /api/generate-review
-    ▼
-[backend]   ──── cache hit? ──► return cached response
-    │
-    │  miss → try Claude (Anthropic SDK)
-    │          on failure → call ML service
-    ▼
-[ai-agent]  ──── OpenAI call ──► return review
-                  on failure → rule-based fallback templates
+                    ┌───────────────┐
+                    │    Browser    │
+                    └───────┬───────┘
+                            │
+                            ▼
+              ┌─────────────────────────┐
+              │   frontend (React SPA)  │   Netlify
+              │   Vite · Tailwind       │
+              └────────────┬────────────┘
+                           │  POST /api/generate-review
+                           ▼
+              ┌─────────────────────────┐
+              │  backend (Node/Express) │   Railway
+              │  cache · rate-limit     │
+              └────────────┬────────────┘
+                           │
+              ┌────────────┴────────────┐
+              ▼                         ▼
+   ┌──────────────────┐      ┌──────────────────────┐
+   │  Claude          │      │ ai-agent (FastAPI)   │
+   │  (Anthropic SDK) │      │ OpenAI + rule-based  │
+   │  PRIMARY         │      │ template fallback    │
+   └──────────────────┘      │ FALLBACK             │
+                             └──────────────────────┘
+```
+
+**Request flow:**
+1. Frontend sends `{farmer_profile, product_name, optional_context}` to the backend
+2. Backend checks its in-memory cache → returns cached response on hit
+3. On miss, backend calls Claude (`claude-sonnet-4-6`) first
+4. If Claude fails, backend calls the Python `ai-agent` service
+5. If OpenAI fails inside `ai-agent`, it falls back to deterministic templates
+
+---
+
+## Repository branches
+
+### `frontend` — React SPA
+
+The user-facing app: a journal-themed landing page and a persona/product builder that calls the backend.
+
+| | |
+|---|---|
+| **Stack** | React 19, React Router 7, Vite, Tailwind CSS 3, Framer Motion, Lucide React |
+| **Deploy** | Netlify |
+| **Entrypoint** | `frontend/src/App.jsx` |
+
+**Highlights**
+- 5 pre-loaded sample personas (Amina, Chinedu, Bola, Grace, Mallam Sani) for one-click demos
+- Persona builder covering all 36 Nigerian states + FCT, 10 crops, 6 soil types, 4 languages
+- Animated review output card with star-pop and typed-text effects
+- Comparison mode (compare reviews from two personas side by side)
+- Recent reviews log (last 5 entries, in-memory)
+- Mobile responsive
+
+**Run locally**
+```bash
+cd frontend
+npm install
+echo "VITE_API_URL=http://localhost:3000" > .env
+npm run dev
 ```
 
 ---
 
-## Sample personas
+### `backend` — Express proxy with Claude
 
-| Persona | Crop | State | Language |
-|---|---|---|---|
-| Amina, 38 | Rice | Kebbi | Hausa |
-| Chinedu, 45 | Cassava | Anambra | Igbo |
-| Bola, 52 | Maize | Oyo | Yoruba |
-| Grace, 29 | Tomato | Plateau | English |
-| Mallam Sani, 61 | Sorghum | Sokoto | Hausa |
+The orchestration layer: validates requests, caches responses, calls Claude, and falls back to the Python service.
+
+| | |
+|---|---|
+| **Stack** | Node.js 18+, Express 4, `@anthropic-ai/sdk`, `express-rate-limit`, `cors` |
+| **AI provider** | **Claude** (`claude-sonnet-4-6`) with prompt caching |
+| **Deploy** | Railway |
+| **Entrypoint** | `backend/server.js` |
+
+**Endpoints**
+- `POST /api/generate-review` — accepts either `{persona, product}` objects or flat `{farmer_profile, product_name}` strings
+- `POST /api/recommend` — product recommendation endpoint
+- `GET /health` — service status + ML fallback ping
+
+**Features**
+- In-memory cache keyed by farmer profile + product name
+- Rate limiting middleware
+- Word-count enforcement (caps reviews at 60 words)
+- Confidence normalization (Low / Medium / High)
+- Request ID tracing for log correlation
+
+**Run locally**
+```bash
+cd backend
+npm install
+cp .env.example .env   # fill in keys below
+npm run dev
+```
+
+**Environment**
+```env
+ANTHROPIC_API_KEY=sk-ant-...           # required — Claude API key
+ML_SERVICE_URL=http://localhost:8000   # required — ai-agent fallback URL
+FRONTEND_URL=http://localhost:5173     # CORS allowlist
+PORT=3000
+```
+
+---
+
+### `ai-agent` — Python FastAPI fallback service
+
+The ML fallback service. The backend calls this when Claude is unavailable or rate-limited. Internally uses **OpenAI** for generation, with deterministic templates as a third-tier safety net.
+
+| | |
+|---|---|
+| **Stack** | Python 3, FastAPI, Uvicorn, OpenAI SDK, Pydantic, python-dotenv |
+| **AI provider** | **OpenAI** (with rule-based template fallback) |
+| **Deploy** | Render / Railway (`Procfile` included) |
+| **Entrypoint** | `main.py` |
+
+**Endpoints**
+- `POST /generate-review` — accepts `farmer_profile`, `product_name`, `optional_context`, `prefer_fallback`
+
+**Features**
+- Pydantic input validation (`agrivoice/validator.py`)
+- Word-count enforcement (15–60 words)
+- Language-aware prompt templates for Hausa, Yoruba, Igbo, English
+- Rule-based fallback (`agrivoice/fallback.py`) when OpenAI is unreachable
+- CORS open for cross-origin calls from the backend
+- Async generation via `asyncio.to_thread`
+
+**Run locally**
+```bash
+pip install -r requirements.txt
+echo "OPENAI_API_KEY=sk-..." > .env
+uvicorn main:app --reload --port 8000
+```
+
+**Environment**
+```env
+OPENAI_API_KEY=sk-...   # required — OpenAI API key
+```
+
+---
+
+## API contract
+
+All three services agree on this response shape:
+
+```json
+{
+  "rating": 4,
+  "review": "This NPK na correct one for rice. I use am for my 2 hectares last season for Kebbi, the result good but price don go up too much this year. Wallahi, ₦35,000 is heavy o.",
+  "confidence": "High",
+  "reasoning": "Farmer from Kebbi (Hausa region), small-scale rice, price-sensitive given 2ha.",
+  "location": "Kebbi, Nigeria"
+}
+```
+
+---
+
+## Sample personas (shipped with the frontend)
+
+| Persona | Crop | State | Farm size | Language |
+|---|---|---|---|---|
+| Amina, 38 | Rice | Kebbi | 2 ha | Hausa |
+| Chinedu, 45 | Cassava | Anambra | 5 ha | Igbo |
+| Bola, 52 | Maize | Oyo | 12 ha | Yoruba |
+| Grace, 29 | Tomato | Plateau | 1.5 ha | English |
+| Mallam Sani, 61 | Sorghum | Sokoto | 4 ha | Hausa |
 
 ---
 
 ## Product categories
 
-Fertilizer · Seed/Seedling · Tool/Equipment · Service · Loan/Finance · Pesticide
+Fertilizer · Seed / Seedling · Tool / Equipment · Service · Loan / Finance · Pesticide
 
 ---
 
-## Languages supported
+## Why two AI providers?
 
-Hausa · Yoruba · Igbo · Nigerian Pidgin · English (with natural code-switching)
+- **Claude** (primary) gives stronger results for nuanced code-switching and culturally-grounded writing, which is what AgriVoice is optimized for.
+- **OpenAI** (in `ai-agent`) provides redundancy — if the Anthropic API is down, rate-limited, or out of budget, the backend silently routes to the Python service.
+- **Rule-based templates** (inside `ai-agent`) provide a final fallback so the user never sees a hard failure, only a less-polished review.
+
+---
+
+## Status
+
+**v0.1 · BETA** — actively developed across three feature branches. The `main` branch tracks `frontend` for the Netlify deploy.
