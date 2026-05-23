@@ -1,5 +1,7 @@
 # AgriVoice
 
+**Live site:** https://agrivoice.netlify.app
+
 **AgriVoice** simulates authentic Nigerian farmer product reviews using rich persona modeling and AI. Build a farmer profile, pick an agricultural product, and generate a review that sounds like it came from that specific person — in their language, in their context.
 
 Supports Hausa, Yoruba, Igbo, and Nigerian Pidgin/English, with natural code-switching between languages.
@@ -29,7 +31,7 @@ React single-page app built with Vite, Tailwind CSS, and Framer Motion.
 
 **Stack:** React 19, React Router 7, Vite, Tailwind CSS 3, Framer Motion, Lucide React
 
-**Deploy target:** Netlify (`netlify.toml` included)
+**Deploy target:** Netlify — [agrivoice.netlify.app](https://agrivoice.netlify.app)
 
 ```bash
 cd frontend
@@ -38,6 +40,7 @@ npm run dev
 ```
 
 Set `VITE_API_URL` in `.env` to point at the backend (defaults to `http://localhost:8000`):
+
 ```
 VITE_API_URL=https://your-backend-url
 ```
@@ -65,22 +68,23 @@ npm start         # production
 ```
 
 Required environment variables (see `backend/.env.example`):
+
 ```
 ANTHROPIC_API_KEY=your_key
 ML_SERVICE_URL=https://your-ml-service-url
-FRONTEND_URL=https://your-frontend-url
+FRONTEND_URL=https://agrivoice.netlify.app
 PORT=3000
 ```
 
 ---
 
 ### `ai-agent`
-Python FastAPI ML service — the core review generator. This is called by the backend as a fallback or primary source depending on configuration.
+Python FastAPI ML service — the core review generator. Called by the backend as a fallback when Claude is unavailable.
 
 **Key features:**
 - `POST /generate-review` — accepts `farmer_profile` string, `product_name`, optional context, and `prefer_fallback` flag
 - OpenAI-powered generation with a 15–60 word review length cap
-- Rule-based template fallback (`agrivoice/fallback.py`) for when the AI is unavailable
+- Rule-based template fallback (`agrivoice/fallback.py`) for when OpenAI is unavailable
 - Input validation with Pydantic models
 - Language-aware prompt templates for Hausa, Yoruba, Igbo, and English
 - CORS enabled for all origins
@@ -93,6 +97,7 @@ uvicorn main:app --reload
 ```
 
 Required environment variable:
+
 ```
 OPENAI_API_KEY=your_key
 ```
@@ -107,16 +112,16 @@ OPENAI_API_KEY=your_key
 [Browser]
     │
     ▼
-[frontend]  ──────────────────────────────────►  Netlify CDN
+[frontend]  ──────────────────────────────────►  agrivoice.netlify.app
     │
     │  POST /api/generate-review
     ▼
 [backend]   ──── cache hit? ──► return cached response
     │
-    │  miss → try Claude (Anthropic SDK)
+    │  miss → try Claude (Anthropic SDK)  ← PRIMARY
     │          on failure → call ML service
     ▼
-[ai-agent]  ──── OpenAI call ──► return review
+[ai-agent]  ──── OpenAI call ──► return review  ← FALLBACK
                   on failure → rule-based fallback templates
 ```
 
